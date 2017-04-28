@@ -1,0 +1,166 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>System 450 - ADC</title>
+
+<style type="text/css" title="Master">
+body {font-family:Arial; font-size:100%; color:#000; margin:0 auto; padding:0; width:100%;}
+h1 {font-size:1em; font-weight:bold; padding:0; margin:0;}
+div {position: absolute; z-index: 1;}
+</style>
+
+<script type="text/javascript">
+var request_timeout     = 4500;
+var status_resp_pending = 0;
+var status_req_timer;
+
+function createXmlHttpReqObject()
+{
+   var http_request;
+
+   http_request = null;
+
+   try 
+   {
+      http_request = new XMLHttpRequest();
+         
+      if( http_request != null )
+      {
+         if( http_request.overrideMimeType )
+         {
+            http_request.overrideMimeType('text/xml');
+         }
+
+         return( http_request );
+      }            
+   } catch(e) {}
+      
+   try { return new ActiveXObject("Msxml2.XMLHTTP");    } catch(e) {}
+   try { return new ActiveXObject("Microsoft.XMLHTTP"); } catch(e) {}
+
+   alert("XMLHttpRequest not supported. Try using a modern browser.");
+
+   return null;
+}
+   
+var status_req = createXmlHttpReqObject();
+   
+function status_response() 
+{
+   if( status_req.readyState == 4 )
+   {
+      clearTimeout( status_req_timer );
+      status_resp_pending = 0;
+
+      if( status_req.status == 200 )
+      {
+         parse_vars(status_req.responseText);
+      }
+   }
+}
+
+function send_status_request()
+{
+   var uri;
+ 
+   if( status_req != null )
+   {
+      uri = "adc_data.cgi" + "?sid=" + Math.random();
+         
+      status_req.onreadystatechange = function () { status_response(); };
+      status_req.open('GET', uri, true);
+      status_req.send(null);
+         
+      status_req_timer    = setTimeout("status_req_fail()", request_timeout);
+      status_resp_pending = 1;
+   }
+}
+
+function status_req_fail()
+{  
+   status_req.abort();
+   status_resp_pending = 0;
+}
+
+function parse_vars(data) 
+{
+   var parsed = data.split("\n");
+
+   Sn1Adc.innerHTML  = parsed[0];
+   Sn2Adc.innerHTML  = parsed[1];
+   Sn3Adc.innerHTML  = parsed[2];
+   FiveAdc.innerHTML = parsed[3];
+   TenAdc.innerHTML  = parsed[4];
+   CpuAdc.innerHTML  = parsed[5];
+        
+   Sn1Eng.innerHTML  = parsed[6];
+   Sn2Eng.innerHTML  = parsed[7];
+   Sn3Eng.innerHTML  = parsed[8];
+   FiveEng.innerHTML = parsed[9];
+   TenEng.innerHTML  = parsed[10];
+   CpuEng.innerHTML  = parsed[11];
+
+   Sn1RV.innerHTML  = parsed[12];
+   Sn2RV.innerHTML  = parsed[13];
+   Sn3RV.innerHTML  = parsed[14];
+}
+
+function periodic_loop() 
+{
+   if( status_resp_pending == 0 )
+   {
+      send_status_request();
+   }
+      
+   setTimeout("periodic_loop()", 1000);
+}
+    
+function page_load()
+{      
+   periodic_loop();
+}
+
+window.onload = page_load;
+
+</script>
+</head>
+
+<body>
+<h1>&nbsp;</h1>
+<h1>&nbsp;&nbsp;&nbsp;&nbsp; System 450 : Analog Inputs</h1>
+
+<div id="ChanHdr" style="left: 20px; top: 70px"><strong>Channel</strong></div>
+<div id="Sn1Prompt" style="left: 20px; top: 100px">Sn-1</div>
+<div id="Sn2Prompt" style="left: 20px; top: 130px">Sn-2</div>
+<div id="Sn3Prompt" style="left: 20px; top: 160px">Sn-3</div>
+<div id="FivePrompt" style="left: 20px; top: 190px">5v ext</div>
+<div id="TenPrompt" style="left: 20px; top: 220px">10v ref</div>
+<div id="CpuPrompt" style="position: absolute; z-index: 1; left: 20px; top: 250px">CPU Temp</div>
+
+<div id="RawHdr" style="left: 120px; top: 70px"><strong>Raw ADC</strong></div>
+<div id="Sn1Adc" style="left: 120px; top: 100px"></div>
+<div id="Sn2Adc" style="left: 120px; top: 130px"></div>
+<div id="Sn3Adc" style="left: 120px; top: 160px"></div>
+<div id="FiveAdc" style="left: 120px; top: 190px"></div>
+<div id="TenAdc" style="left: 120px; top: 220px"></div>
+<div id="CpuAdc" style="left: 120px; top: 250px"></div>
+
+<div id="RVHdr" style="left: 220px; top: 70px"><strong>ohms / vdc</strong></div>
+<div id="Sn1RV" style="left: 220px; top: 100px"></div>
+<div id="Sn2RV" style="left: 220px; top: 130px"></div>
+<div id="Sn3RV" style="left: 220px; top: 160px"></div>
+<div id="FiveRV" style="left: 220px; top: 190px">--</div>
+<div id="TenRV" style="left: 220px; top: 220px">--</div>
+<div id="CpuRV" style="left: 220px; top: 250px">--</div>
+
+<div id="EngHdr" style="left: 380px; top: 70px"><strong>Eng Units</strong></div>
+<div id="Sn1Eng" style="left: 380px; top: 100px"></div>
+<div id="Sn2Eng" style="left: 380px; top: 130px"></div>
+<div id="Sn3Eng" style="left: 380px; top: 160px"></div>
+<div id="FiveEng" style="left: 380px; top: 190px"></div>
+<div id="TenEng" style="left: 380px; top: 220px"></div>
+<div id="CpuEng" style="left: 380px; top: 250px"></div>
+
+</body>
+</html>

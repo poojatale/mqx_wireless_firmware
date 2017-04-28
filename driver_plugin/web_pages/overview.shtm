@@ -1,0 +1,277 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Cache-control" content="no-cache"/>
+<meta http-equiv="Expires" content="-1"/>
+
+<title>C535 Configuration</title>
+
+<style type="text/css">
+<!--
+@import"c535.css";
+-->
+</style>
+
+<script type="text/javascript">
+var request_timeout     = 4500;
+var access_granted      = 0;
+var num_sensors         = 0;
+var num_outputs         = 0;
+var access_resp_pending = 0;
+var access_retry        = 0;
+var status_resp_pending = 0;
+var access_req_timer;
+var status_req_timer;
+
+var uid_str = window.location.search;
+
+// Remove leading '?' char if present
+if( uid_str.substring( 0, 1 ) == '?' ) 
+{
+   uid_str = uid_str.substring( 1 );
+}
+
+if( uid_str.length == 0 )
+    uid_str = "fail";
+
+function createXmlHttpReqObject()
+{
+   var http_request;
+
+   http_request = null;
+
+   try 
+   {
+      http_request = new XMLHttpRequest();
+
+      if( http_request != null )
+      {
+         if( http_request.overrideMimeType )
+         {
+            http_request.overrideMimeType('text/xml');
+         }
+
+         return( http_request );
+      }            
+   } catch(e) {}
+
+   try { return new ActiveXObject("Msxml2.XMLHTTP");    } catch(e) {}
+   try { return new ActiveXObject("Microsoft.XMLHTTP"); } catch(e) {}
+
+   alert("XMLHttpRequest not supported. Try using a modern browser.");
+
+   return null;
+}
+
+var access_req = createXmlHttpReqObject();
+var status_req = createXmlHttpReqObject();
+
+function access_response() 
+{    
+   if( access_req.readyState == 4 )
+   {
+      clearTimeout( access_req_timer );
+      access_resp_pending = 0;
+
+      if( access_req.status == 200 )
+      {
+         var result = access_req.responseText.split("\n");
+
+         if( result[0] == "true" )
+            access_granted = 1;
+         else if( result[0]== "false" )
+            location.href = "index.shtm"
+         else
+            access_retry = 1;
+
+         CommState.innerHTML = "ok";
+      }
+      else
+      {
+         CommState.innerHTML = "fail";
+         access_retry        = 1;
+      }
+   }
+}
+
+function send_access_request() 
+{
+   var uri;
+
+   if( access_req != null )
+   {
+      uri = "access.cgi" + "?sid=" + Math.random();
+
+      access_req.open('POST', uri, true);
+      access_req.onreadystatechange = function () { access_response(); };
+      access_req.send( uid_str );
+
+      access_req_timer    = setTimeout("access_req_fail()", request_timeout);
+      access_resp_pending = 1;
+   }
+}
+
+function access_req_fail()  
+{  
+   access_req.abort();
+   CommState.innerHTML = "fail";
+   access_resp_pending = 0;
+   access_retry        = 1;
+}
+
+function status_response() 
+{
+   if( status_req.readyState == 4 )
+   {
+      clearTimeout( status_req_timer );
+      status_resp_pending = 0;
+
+      if( status_req.status == 200 )
+      {
+         CommState.innerHTML = "ok";
+         parse_vars(status_req.responseText);
+      }
+      else
+      {
+         CommState.innerHTML = "fail";
+      }        
+   }
+}
+
+function send_status_request()
+{
+   var uri;
+
+   if( status_req != null )
+   {
+      uri = "status_data.cgi" + "?sid=" + Math.random();
+
+      status_req.open('GET', uri, true);
+      status_req.onreadystatechange = function () { status_response(); };
+      status_req.send(null);
+
+      status_req_timer    = setTimeout("status_req_fail()", request_timeout);
+      status_resp_pending = 1;
+   }
+}
+
+function status_req_fail()
+{  
+   status_req.abort();
+   CommState.innerHTML = "fail";
+   status_resp_pending = 0;
+}
+
+function parse_vars(data) 
+{
+   var parsed = data.split("\n");
+
+   num_sensors   = parsed[0];
+   num_outputs   = parsed[1];
+
+   Sn1.innerHTML = parsed[2];
+   Sn2.innerHTML = parsed[3];
+   Sn3.innerHTML = parsed[4];
+   Sn4.innerHTML = parsed[5];
+
+  // On.innerHTML  = parsed[6];
+
+   var editP5Obj  = document.getElementById('ON');
+   editP5Obj.value  = parsed[6];  // Relay ON
+
+   
+   if( num_outputs >= 2 )   { Stat2.innerHTML  = parsed[7];  }
+   if( num_outputs >= 3 )   { Stat3.innerHTML  = parsed[8];  }
+   if( num_outputs >= 4 )   { Stat4.innerHTML  = parsed[9];  }
+   if( num_outputs >= 5 )   { Stat5.innerHTML  = parsed[10]; }
+   if( num_outputs >= 6 )   { Stat6.innerHTML  = parsed[11]; }
+   if( num_outputs >= 7 )   { Stat7.innerHTML  = parsed[12]; }
+   if( num_outputs >= 8 )   { Stat8.innerHTML  = parsed[13]; }
+   if( num_outputs >= 9 )   { Stat9.innerHTML  = parsed[14]; }
+   if( num_outputs >= 10 )  { Stat10.innerHTML = parsed[15]; }
+}
+
+function periodic_loop() 
+{
+   if( status_resp_pending == 0 )
+   {
+      send_status_request();
+   }
+
+   setTimeout("periodic_loop()", 1000);
+}
+
+function page_load()
+{
+   periodic_loop();
+}
+
+function menu_choice()  {  location.href = "index.shtm";  }
+
+window.onload = page_load;
+
+</script>
+</head>
+
+<body>
+<div id="mainContainer">
+<div id="mainBody">
+<div id="sidebar" >
+<img src="PennLogo110.png" title="Johnson Controls/PENN" alt="Johnson Controls/PENN" style="border-width: 0; vertical-align: middle;"  />
+<br />
+<br />            
+<h2>Login</h2>
+<p class="logout"><input class="menubutton" name="ButtonLogout" type="button" value="Logout" onclick="menu_choice()"/></p>
+<h2>Configuration</h2>
+<p class="configmenu"><input class="menubutton" name="ButtonSystem" type="button" value="System" onclick="menu_choice()"/></p>
+<p class="configmenu"><input class="menubutton" name="ButtonSensor" type="button" value="Sensors" onclick="menu_choice()"/></p>
+<p class="configmenu"><input class="menubutton" name="ButtonSensor" type="button" value="Temp Control" onclick="menu_choice()"/></p>
+<p class="configmenu"><input class="menubutton" name="ButtonSensor" type="button" value="Defrost" onclick="menu_choice()"/></p>
+<p class="configmenu"><input class="menubutton" name="ButtonSensor" type="button" value="Alarms" onclick="menu_choice()"/></p>
+<p class="configmenu"><input class="menubutton" name="ButtonSensor" type="button" value="History" onclick="menu_choice()"/></p>
+<p class="configmenu"><input class="menubutton" name="ButtonTcpip" type="button" value="Network" onclick="menu_choice()"/></p>
+</div>
+
+<div id="header" >
+<img alt="" src="banner.png" />
+</div>
+
+<div id="blankbar" style="height: 8px"></div>
+
+<div id="mainContent">
+<h1>System Configuration</h1>
+<ul style="margin:0; padding:0;">
+<li class="sensorLabel">Sn-1: Space Temp  </li>
+<li class="sensorLabel">Sn-2: CPU Temp    </li>
+<li class="sensorLabel">Sn-3: sensor name </li>
+<li class="sensorLabel">Sn-4: sensor name </li>
+<li class="commLabel">Comm</li>
+</ul>
+<div class="clear"></div>
+<ul style="margin:0; padding:0;">
+<li id="Sn1" class="sensorValue"></li>
+<li id="Sn2" class="sensorValue"></li>
+<li id="Sn3" class="sensorValue"></li>
+<li id="Sn4" class="sensorValue"></li>
+<li id="CommState" class="commValue"></li>
+</ul>
+<div class="clear"></div>
+<ul style="margin:0; padding:0;">
+<li class="spacing"></li>
+<li class="spacing"></li>
+<li class="spacing"></li>
+</ul>
+<div class="clear"> </div>
+<div class="space">
+<h3><span id="OnPrompt" class="auto-style1"><strong>Setpoint : </strong></span><input name="P5" type="text" id="ON" style="height: 21px; width: 93px" /></h3>
+<br />
+
+	</div>
+</div>
+<div class="clear">&nbsp;</div>
+</div>
+</div>
+</body>
+</html>

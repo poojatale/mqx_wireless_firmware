@@ -1,0 +1,13 @@
+1. Put the Freedom board into "Bootloader Mode"
+	  i. Unplug USB cable
+	 ii. Press and hold reset button
+	iii. Plus USB cable into OpenSDA port
+	 iv. Release reset button
+
+2. At this point the Freedom board should appear as a removable drive
+
+3. Drag and drop "JLink_OpenSDA_V2_1.bin" onto this drive
+
+4. Unplug USB cable and then plug it in again
+
+5. The OpenSDA app should now be running and the J Link debugger should function

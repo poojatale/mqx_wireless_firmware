@@ -1,0 +1,191 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Cache-control" content="no-cache"/>
+<meta http-equiv="Expires" content="-1"/>
+<meta name="viewport" content="width=device-width"> 
+
+<title>K22F Demo</title>
+
+<style type="text/css">
+<!--
+@import"c535.css";
+-->
+</style>
+
+<script type="text/javascript">
+var request_timeout     = 4500;
+var num_sensors         = 0;
+var num_outputs         = 0;
+var status_resp_pending = 0;
+var status_req_timer;
+
+var uid_str = window.location.search;
+
+// Remove leading '?' char if present
+if( uid_str.substring( 0, 1 ) == '?' ) 
+{
+   uid_str = uid_str.substring( 1 );
+}
+
+if( uid_str.length == 0 )
+    uid_str = "fail";
+
+function createXmlHttpReqObject()
+{
+   var http_request;
+
+   http_request = null;
+
+   try 
+   {
+      http_request = new XMLHttpRequest();
+
+      if( http_request != null )
+      {
+         if( http_request.overrideMimeType )
+         {
+            http_request.overrideMimeType('text/xml');
+         }
+
+         return( http_request );
+      }            
+   } catch(e) {}
+
+   try { return new ActiveXObject("Msxml2.XMLHTTP");    } catch(e) {}
+   try { return new ActiveXObject("Microsoft.XMLHTTP"); } catch(e) {}
+
+   alert("XMLHttpRequest not supported. Try using a modern browser.");
+
+   return null;
+}
+
+var status_req = createXmlHttpReqObject();
+
+
+function status_response() 
+{
+   if( status_req.readyState == 4 )
+   {
+      clearTimeout( status_req_timer );
+      status_resp_pending = 0;
+
+      if( status_req.status == 200 )
+      {
+         //CommState.innerHTML = "ok";
+         parse_vars(status_req.responseText);
+      }
+      else
+      {
+         //CommState.innerHTML = "fail";
+      }        
+   }
+}
+
+function send_status_request()
+{
+   var uri;
+
+   if( status_req != null )
+   {
+      uri = "web_data.cgi" + "?sid=" + Math.random();
+
+      status_req.open('GET', uri, true);
+      status_req.onreadystatechange = function () { status_response(); };
+      status_req.send(null);
+
+      status_req_timer    = setTimeout("status_req_fail()", request_timeout);
+      status_resp_pending = 1;
+   }
+}
+
+function status_req_fail()
+{  
+   status_req.abort();
+  // CommState.innerHTML = "fail";
+   status_resp_pending = 0;
+}
+
+function parse_vars(data) 
+{
+   var parsed = data.split("\n");
+
+   relayStatus.innerHTML = parsed[0];
+   
+}
+
+function periodic_loop() 
+{
+   send_status_request();
+
+   setTimeout("periodic_loop()", 1000);
+}
+
+function page_load()
+{
+   send_status_request();     
+
+   setTimeout("periodic_loop()", 1000);
+}
+
+function menu_choice()  {  location.href = "overview.shtm";  }
+
+function relay_toggle()
+{
+   var uri;
+   uri = "relay_data.cgi" + "?sid=" + Math.random();
+	
+}
+
+window.onload = page_load;
+
+</script>
+</head>
+
+<body align="center">
+<div id="mainContainer" align="center">
+	<div id="mainBody">
+		<div id="titleContent">
+		  <h1>FRDM-K22F Wireless Fan Control</h1>
+			<img src="Johnson_Controls_svg.png" alt="Mountain View" style="width:275px;height:155px;padding-left:38px;">
+			 <p id="info">Blake Watzke<br>Intern Technical IV<br>Johnson Controls Inc</p>
+		 </div> 
+			<div id="blankbar" style="height: 20px"></div>
+      <div id="mainContent">
+       <form action="http:write_relay.cgi" method="post">
+         <h2>Fan Control</h2>
+               <div id="dropdown" align="center">
+                <select class="relaydropdown" name="component-select">
+                  <option selected="relayState" disabled="disabled">Select</option>
+                  <option value="On">ON</option>
+                  <option value="Off">OFF</option>
+                  
+                </select>
+                   <div>&nbsp;</div>
+                   <div>&nbsp;</div>
+                   <input type="submit" value="Submit" id="submit">
+                    <div>&nbsp;</div>
+                 <p>____________________________________________</p>
+			
+               </div> <!-- End dropdown -->
+               <div>&nbsp;</div>
+               
+      <!-- End form -->
+           <div class="contentBorder" style="height: 50px">
+              <h3>Fan Status</h3>
+             <textarea rows="1" cols="1" readonly="readonly" id="relayStatus" class="sensorValue"></textarea>
+           </div>		
+
+       </form>
+      <div>&nbsp;</div>
+      <div>&nbsp;</div>
+      <div>&nbsp;</div>
+	</div>	<!-- End main content -->
+        
+	</div> <!-- End main body -->
+</div> <!-- End main container -->
+</body>
+
+
